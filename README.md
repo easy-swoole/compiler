@@ -48,5 +48,18 @@ if($license){
 因此就有人提出想法，如果我把这个加密的函数协程php拓展编译成so动态库文件，然后so在做加壳混淆，不就完美的解决了吗。毕竟、so加壳混淆的方案，可是非常成熟的。好了，我的加密拓展，就是这样的思路。
 
 ## 实现步骤
-- 我们会实现一个php版本的，用于原理直观讲解
 - c版本。c版本我们也会实现并开源，且教大家如何对自己编译出来的so文件进行加壳混淆。
+
+## 部分测试
+```
+var_dump(extension_loaded('easy_complier'));
+
+var_dump(easy_complier_decrypt('$a = new \stdclass();return $a;'));
+```
+
+## 弊端
+- 问题：通过对zend_compile_file的hook可以得到完整的代码
+- 解决方案：替换zend_compile_file，然后对生成的opcode进行指令插花，混淆
+
+## 参考资料
+- https://github.com/jvoisin/snuffleupagus/

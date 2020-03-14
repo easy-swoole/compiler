@@ -1,6 +1,8 @@
 #include <php.h>
 #include "complier.h"
 
+
+
 zend_function_entry easy_complier_functions[] = {
         PHP_FE(easy_complier_encrypt, NULL)
         PHP_FE(easy_complier_decrypt, NULL)
@@ -34,6 +36,11 @@ PHP_FUNCTION(easy_complier_decrypt) {
         RETURN_NULL();
     }
 
-    php_printf("Hello %s ", encrypt_string);
-    RETURN_TRUE;
+    zval retval;
+    zend_try {
+        zend_eval_string(encrypt_string, return_value, (char *)"" TSRMLS_CC);
+    } zend_catch {
+
+    } zend_end_try();
+
 };

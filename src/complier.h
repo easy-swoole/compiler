@@ -3,3 +3,4 @@
 
 PHP_FUNCTION(easy_complier_encrypt);
 PHP_FUNCTION(easy_complier_decrypt);
+
