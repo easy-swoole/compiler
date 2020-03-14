@@ -1,6 +1,42 @@
 #include <php.h>
 #include "complier.h"
 
+static zend_op_array *decrypt_compile_string(zval *source_string, char *filename)
+{
+
+//    len  = Z_STRLEN_P(source_string);
+//    str = estrndup(Z_STRVAL_P(source_string), len);
+//    printf("\n==========DUMP===========\n");
+//    printf("%s", str);
+//    php_printf("\n==========DUMP===========\n");
+    return zend_compile_string(source_string,filename);
+}
+
+static zend_op_array *decrypt_compile_file(zend_file_handle *file_handle, int type)
+{
+    char *buf;
+    size_t size;
+    if(zend_stream_fixup(file_handle,&buf,&size)==SUCCESS)
+    {
+//        printf("%s",file_handle->filename);
+//        printf("\n==========DUMP===========\n");
+//        int i = 0;
+//        for(i=0;i<=size;i++)
+//        {
+//            printf("%c",buf[i]);
+//        }
+//        printf("\n==========DUMP===========\n");
+    }
+    return compile_file(file_handle,type);
+}
+
+PHP_MINIT_FUNCTION(decrypt_code)
+{
+    // zend hook
+//    zend_compile_file = decrypt_compile_file;
+    zend_compile_string = decrypt_compile_string;
+    return SUCCESS;
+}
 
 
 zend_function_entry easy_complier_functions[] = {
@@ -13,7 +49,7 @@ zend_module_entry easy_complier_module_entry = {
         STANDARD_MODULE_HEADER,
         PHP_COMPLIER_EXTNAME,
         easy_complier_functions,
-        NULL,
+        PHP_MINIT(decrypt_code),
         NULL,
         NULL,
         NULL,
