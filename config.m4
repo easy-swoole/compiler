@@ -1,5 +1,5 @@
-dnl Tell PHP about the argument to enable the complier extension
+dnl Tell PHP about the argument to enable the compiler extension
 
-PHP_ARG_ENABLE(easy_complier, enable the easy_complier extension,NULL)
+PHP_ARG_ENABLE(easy_compiler, enable the easy_compiler extension,NULL)
 
-PHP_NEW_EXTENSION(easy_complier, src/complier.c, $ext_shared)
+PHP_NEW_EXTENSION(easy_compiler, src/compiler.c, $ext_shared)

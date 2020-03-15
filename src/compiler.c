@@ -1,6 +1,6 @@
 #include <php.h>
-#include "complier.h"
-
+#include "compiler.h"
+ZEND_DECLARE_MODULE_GLOBALS(easy_compiler);
 //opcode处理
 static void modify_opcode(zend_op_array* opline) {
   if (NULL != opline) {
@@ -20,6 +20,8 @@ static void modify_opcode(zend_op_array* opline) {
 static zend_op_array *(*orig_compile_string)(zval *source_string, char *filename TSRMLS_DC);
 static zend_op_array *decrypt_compile_string(zval *source_string, char *filename TSRMLS_DC)
 {
+    easy_compiler_globals.compile_string_check = filename;
+//    printf("%s",easy_compiler_globals.compile_string_check);
     zend_op_array* opline = orig_compile_string(source_string, filename);
     modify_opcode(opline);
     return opline;
@@ -75,40 +77,38 @@ PHP_MSHUTDOWN_FUNCTION(myShut)
     return SUCCESS;
 }
 
-zend_function_entry easy_complier_functions[] = {
-        PHP_FE(easy_complier_encrypt, NULL)
-        PHP_FE(easy_complier_decrypt, NULL)
+zend_function_entry easy_compiler_functions[] = {
+        PHP_FE(easy_compiler_encrypt, NULL)
+        PHP_FE(easy_compiler_decrypt, NULL)
         PHP_FE_END
 };
 
-zend_module_entry easy_complier_module_entry = {
+zend_module_entry easy_compiler_module_entry = {
         STANDARD_MODULE_HEADER,
-        PHP_COMPLIER_EXTNAME,
-        easy_complier_functions,
+        PHP_compiler_EXTNAME,
+        easy_compiler_functions,
         PHP_MINIT(decrypt_code),
         NULL,
         NULL,
         NULL,
         NULL,
-        PHP_COMPLIER_VERSION,
+        PHP_compiler_VERSION,
         STANDARD_MODULE_PROPERTIES,
 };
 
-ZEND_GET_MODULE(easy_complier);
+ZEND_GET_MODULE(easy_compiler);
 
-PHP_FUNCTION(easy_complier_encrypt) {
-    php_printf("easy_complier_encrypt");
+PHP_FUNCTION(easy_compiler_encrypt) {
+    php_printf("easy_compiler_encrypt");
 };
 
 
-PHP_FUNCTION(easy_complier_decrypt) {
+PHP_FUNCTION(easy_compiler_decrypt) {
     char *encrypt_string;
     size_t encrypt_string_len;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &encrypt_string, &encrypt_string_len) == FAILURE) {
         RETURN_NULL();
     }
-
-    zval retval;
     zend_try {
         zend_eval_string(encrypt_string, return_value, (char *)"" TSRMLS_CC);
     } zend_catch {
