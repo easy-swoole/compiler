@@ -1,7 +1,11 @@
 #include <php.h>
+#include <zend_string.h>
 #include <zend_exceptions.h>
-#include <zend_execute.h>
-#include <zend_vm_execute.h>
+//#include <zend_execute.h>
+#include <zend_types.h>
+#include <zend_operators.h>
+//#include <zend_generators.h>
+//#include <zend_vm_execute.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "compiler.h"
@@ -214,18 +218,28 @@ PHP_FUNCTION(easy_compiler_decrypt) {
     base64 = easy_base64_decode(base64);
     decrypt_string = decrypt_str(base64);
 
-    zend_string *eval;
-    eval = zend_string_copy(decrypt_string);
-    zend_op_array *new_op_array;
-    new_op_array = compile_string(eval,zend_get_executed_filename(TSRMLS_C));
-//    zend_execute(new_op_array, &retval);
-//    printf("%s \n",zend_get_executed_filename(TSRMLS_C));
+    zend_string *eval_string;
+    eval_string = zend_string_init(decrypt_string,strlen(decrypt_string),0);
 
-//    zend_try {
+    zend_op_array *new_op_array;
+    char *filename = zend_get_executed_filename(TSRMLS_C);
+    new_op_array =  orig_compile_string(eval_string, filename);
+    zval retval;
+    zend_try {
+        // exec new op code
+//        zend_execute(new_op_array,&retval);
 //        zend_eval_stringl(decrypt_string,strlen(decrypt_string), return_value, (char *)"" TSRMLS_CC);
-//    } zend_catch {
-//
-//    } zend_end_try();
+    } zend_catch {
+
+    } zend_end_try();
+
+
+    char *str;
+    int len ;
+    len = ZSTR_LEN(eval_string);
+    str = estrndup(ZSTR_VAL(eval_string), len);
+    printf("%s",str);
+
     if(base64){
         free(base64);
         base64 = NULL;
