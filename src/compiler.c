@@ -1,8 +1,60 @@
 #include <php.h>
 #include <zend_exceptions.h>
+#include <zend_execute.h>
+#include <zend_vm_execute.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "compiler.h"
 #include "base64.h"
+
+
+
+static bool include(char *file){
+    zend_file_handle file_handle;
+    int ret = php_stream_open_for_zend_ex(file, &file_handle, USE_PATH | STREAM_OPEN_FOR_INCLUDE);
+    if (ret != SUCCESS)
+    {
+        return false;
+    }
+    char *temp = "asdasd";
+
+    zend_string *opened_path;
+    if (!file_handle.opened_path)
+    {
+        file_handle.opened_path = zend_string_init(file, strlen(file), 0);
+    }
+    //尝试修改文件信息
+//    file_handle.opened_path = zend_string_init(temp, strlen(temp), 0);
+//    printf("sss   %s", file_handle.filename);
+//    printf("sss   %s", file_handle.opened_path);
+//    printf("sss   %s", file_handle.opened_path);
+//    fwrite(file_handle.handle.fp,NULL);
+    opened_path = zend_string_copy(file_handle.opened_path);
+    zval dummy;
+    zval retval;
+    zend_op_array *new_op_array;
+    ZVAL_NULL(&dummy);
+    if (zend_hash_add(&EG(included_files), opened_path, &dummy))
+    {
+        new_op_array = zend_compile_file(&file_handle, ZEND_REQUIRE);
+        zend_destroy_file_handle(&file_handle);
+    }
+    else
+    {
+        new_op_array = NULL;
+        zend_file_handle_dtor(&file_handle);
+    }
+    zend_string_release(opened_path);
+    if (!new_op_array)
+    {
+        return false;
+    }
+
+    zend_execute(new_op_array, &retval);
+    destroy_op_array(new_op_array);
+    efree(new_op_array);
+    return Z_TYPE(retval) == IS_TRUE;
+}
 
 //空实现
 static unsigned char* encrypt_str(unsigned char *raw)
@@ -20,7 +72,6 @@ static unsigned char* decrypt_str(unsigned char *raw)
     strcpy(res,raw);
     return res;
 }
-
 
 
 ZEND_DECLARE_MODULE_GLOBALS(easy_compiler);
@@ -59,7 +110,7 @@ static zend_op_array *decrypt_compile_string(zval *source_string, char *filename
 //    len  = Z_STRLEN_P(source_string);
 //    str = estrndup(Z_STRVAL_P(source_string), len);
 //    printf("\n==========DUMP===========\n");
-//    printf("%s", str);
+//    printf("%s", filename);
 //    printf("\n==========DUMP===========\n");
 //    return orig_compile_string(source_string, filename);
 }
@@ -71,6 +122,7 @@ static zend_op_array *decrypt_compile_file(zend_file_handle *file_handle, int ty
     }
     zend_op_array* opline = compile_file(file_handle, type);
     modify_opcode(opline);
+
     return opline;
      //以下为eval等混淆破解
 //    char *buf;
@@ -115,6 +167,7 @@ PHP_MSHUTDOWN_FUNCTION(myShut)
 zend_function_entry easy_compiler_functions[] = {
         PHP_FE(easy_compiler_encrypt, NULL)
         PHP_FE(easy_compiler_decrypt, NULL)
+        PHP_FE(easy_compiler_include, NULL)
         PHP_FE_END
 };
 
@@ -160,11 +213,19 @@ PHP_FUNCTION(easy_compiler_decrypt) {
     }
     base64 = easy_base64_decode(base64);
     decrypt_string = decrypt_str(base64);
-    zend_try {
-        zend_eval_string(decrypt_string, return_value, (char *)"" TSRMLS_CC);
-    } zend_catch {
 
-    } zend_end_try();
+    zend_string *eval;
+    eval = zend_string_copy(decrypt_string);
+    zend_op_array *new_op_array;
+    new_op_array = compile_string(eval,zend_get_executed_filename(TSRMLS_C));
+//    zend_execute(new_op_array, &retval);
+//    printf("%s \n",zend_get_executed_filename(TSRMLS_C));
+
+//    zend_try {
+//        zend_eval_stringl(decrypt_string,strlen(decrypt_string), return_value, (char *)"" TSRMLS_CC);
+//    } zend_catch {
+//
+//    } zend_end_try();
     if(base64){
         free(base64);
         base64 = NULL;
@@ -176,3 +237,11 @@ PHP_FUNCTION(easy_compiler_decrypt) {
 };
 
 
+PHP_FUNCTION(easy_compiler_include){
+    unsigned char *file;
+    size_t file_len;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &file, &file_len) == FAILURE) {
+        RETURN_NULL();
+    }
+    include(file);
+};
