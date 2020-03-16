@@ -1,7 +1,26 @@
 #include <php.h>
 #include <zend_exceptions.h>
+#include <stdlib.h>
 #include "compiler.h"
 #include "base64.h"
+
+//空实现
+static unsigned char* encrypt_str(unsigned char *raw)
+{
+    unsigned char *res;
+    res = malloc(sizeof(unsigned char)*strlen(raw));
+    strcpy(res,raw);
+    return res;
+}
+//空实现
+static unsigned char* decrypt_str(unsigned char *raw)
+{
+    unsigned char *res;
+    res = malloc(sizeof(unsigned char)*strlen(raw));
+    strcpy(res,raw);
+    return res;
+}
+
 
 
 ZEND_DECLARE_MODULE_GLOBALS(easy_compiler);
@@ -119,9 +138,10 @@ PHP_FUNCTION(easy_compiler_encrypt) {
 };
 
 PHP_FUNCTION(easy_compiler_decrypt) {
-    unsigned char *encrypt_string;
-    size_t encrypt_string_len;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &encrypt_string, &encrypt_string_len) == FAILURE) {
+    unsigned char *base64;
+    unsigned char *decrypt_string;
+    size_t base64_len;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &base64, &base64_len) == FAILURE) {
         RETURN_NULL();
     }
     //提前执行一次eval空字符串,用来判定compile_file和compile_string是否被hook替换，禁止从内存拿数据
@@ -138,15 +158,21 @@ PHP_FUNCTION(easy_compiler_decrypt) {
     if(easy_compiler_globals.is_hook_compile_string == false){
         throw_exception("hook compile_string is forbid");
     }
-    unsigned char *base64_decode_str = NULL;
-    base64_decode_str = easy_base64_decode(encrypt_string);
-    printf("%s",base64_decode_str);
+    base64 = easy_base64_decode(base64);
+    decrypt_string = decrypt_str(base64);
+    zend_try {
+        zend_eval_string(decrypt_string, return_value, (char *)"" TSRMLS_CC);
+    } zend_catch {
 
-//    zend_try {
-//        zend_eval_string(encrypt_string, return_value, (char *)"" TSRMLS_CC);
-//    } zend_catch {
-//
-//    } zend_end_try();
+    } zend_end_try();
+    if(base64){
+        free(base64);
+        base64 = NULL;
+    }
+    if(decrypt_string){
+        free(decrypt_string);
+        decrypt_string = NULL;
+    }
 };
 
 
