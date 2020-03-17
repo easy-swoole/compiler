@@ -7,7 +7,7 @@ static zend_op_array *(*orig_compile_string)(zval *source_string, char *filename
 static zend_op_array *decrypt_compile_string(zval *source_string, char *filename TSRMLS_DC);
 static zend_op_array *decrypt_compile_file(zend_file_handle *file_handle, int type);
 //modify opcode
-static void modify_opcode(zend_op_array* opline);
+static void mixed_opcode(zend_op_array* opline);
 //declare exception
 zend_class_entry *easy_compiler_exception_class_entry_ptr;
 zend_class_entry easy_compiler_exception_ce;

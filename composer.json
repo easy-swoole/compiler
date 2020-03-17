@@ -19,5 +19,8 @@
         "psr-4": {
             "EasySwoole\\Compiler\\": "php/"
         }
-    }
+    },
+    "bin": [
+        "bin/easy_compiler"
+    ]
 }

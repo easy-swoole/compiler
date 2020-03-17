@@ -1,0 +1,17 @@
+#!/usr/bin/env php
+<?php
+
+$array = $argv;
+array_shift($array);
+$file = array_shift($array);
+if(empty($file) || !file_exists($file)){
+    echo "{$file} not exist\n";
+}
+require_once realpath(getcwd()).'/vendor/autoload.php';
+
+$rawData = file_get_contents($file);
+
+$data = EasySwoole\Compiler\Compiler::encrypt($file);
+
+file_put_contents("{$file}.bak",$rawData);
+file_put_contents("{$file}",$data);

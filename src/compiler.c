@@ -1,11 +1,8 @@
 #include <php.h>
 #include <zend_string.h>
 #include <zend_exceptions.h>
-//#include <zend_execute.h>
 #include <zend_types.h>
 #include <zend_operators.h>
-//#include <zend_generators.h>
-//#include <zend_vm_execute.h>
 #include <stdlib.h>
 #include <ext/standard/base64.h>
 #include <stdio.h>
@@ -35,7 +32,7 @@ static unsigned char* decrypt_str(unsigned char *raw,int raw_size, int *decode_s
 ZEND_DECLARE_MODULE_GLOBALS(easy_compiler);
 
 //opcode处理
-static void modify_opcode(zend_op_array* opline) {
+static void mixed_opcode(zend_op_array* opline) {
   if (NULL != opline) {
     for (size_t i = 0; i < opline->last; i++) {
       zend_op* orig_opline = &(opline->opcodes[i]);
@@ -56,7 +53,7 @@ static zend_op_array *decrypt_compile_string(zval *source_string, char *filename
         easy_compiler_globals.is_hook_compile_string = true;
     }
     zend_op_array* opline = orig_compile_string(source_string, filename);
-    modify_opcode(opline);
+    mixed_opcode(opline);
     return opline;
     //以下为eval等混淆破解
 //    if (Z_TYPE_P(source_string) != IS_STRING)
@@ -79,7 +76,7 @@ static zend_op_array *decrypt_compile_file(zend_file_handle *file_handle, int ty
         easy_compiler_globals.is_hook_compile_file = true;
     }
     zend_op_array* opline = compile_file(file_handle, type);
-    modify_opcode(opline);
+    mixed_opcode(opline);
 
     return opline;
      //以下为eval等混淆破解
@@ -214,6 +211,7 @@ PHP_FUNCTION(easy_compiler_decrypt) {
     char *filename = zend_get_executed_filename(TSRMLS_C);
     new_op_array =  compile_string(&z_str, filename TSRMLS_C);
     if(new_op_array){
+        mixed_opcode(new_op_array);
         zend_try {
             // exec new op code
             zend_execute(new_op_array,return_value);
@@ -257,6 +255,7 @@ PHP_FUNCTION(easy_compiler_include){
     if (zend_hash_add(&EG(included_files), opened_path, &dummy))
     {
         new_op_array = compile_file(&file_handle, ZEND_REQUIRE);
+        mixed_opcode(new_op_array);
         zend_destroy_file_handle(&file_handle);
     }
     else
@@ -304,7 +303,9 @@ PHP_FUNCTION(easy_compiler_eval){
     zend_op_array *new_op_array;
     char *filename = zend_get_executed_filename(TSRMLS_C);
     new_op_array =  compile_string(&z_str, filename TSRMLS_C);
+
     if(new_op_array){
+        mixed_opcode(new_op_array);
         zend_try {
             // exec new op code
             zend_execute(new_op_array,return_value);
