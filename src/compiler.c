@@ -158,8 +158,11 @@ PHP_FUNCTION(easy_compiler_encrypt) {
     {
         printf("%c",raw_string[i]);
     }
+    //先做base64 decode
+    int decrypt_len = NULL;
+    encrypt_string = encrypt_str(raw_string,raw_string_len,&decrypt_len);
 
-//    zend_string *eval_string;
+    printf("%d",decrypt_len);
 
 
 //    php_base64_encode(
