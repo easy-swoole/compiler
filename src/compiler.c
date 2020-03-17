@@ -13,19 +13,21 @@
 
 
 //空实现
-static unsigned char* encrypt_str(unsigned char *raw)
+static unsigned char* encrypt_str(unsigned char *raw,int raw_size, int *decode_size)
 {
     unsigned char *res;
-    res = malloc(sizeof(unsigned char)*strlen(raw));
-    strcpy(res,raw);
+    res = malloc(sizeof(unsigned char)*raw_size);
+    *decode_size = raw_size;
+    memcpy(res,raw,raw_size);
     return res;
 }
 //空实现
-static unsigned char* decrypt_str(unsigned char *raw)
+static unsigned char* decrypt_str(unsigned char *raw,int raw_size, int *decode_size)
 {
     unsigned char *res;
-    res = malloc(sizeof(unsigned char)*strlen(raw));
-    strcpy(res,raw);
+    res = malloc(sizeof(unsigned char)*raw_size);
+    *decode_size = raw_size;
+    memcpy(res,raw,raw_size);
     return res;
 }
 
@@ -163,7 +165,7 @@ PHP_FUNCTION(easy_compiler_encrypt) {
 //    php_base64_encode(
 
     //执行加密
-    encrypt_string = encrypt_str(raw_string);
+//    encrypt_string = encrypt_str(raw_string);
 //    char *base64 = easy_base64_encode(encrypt_string);
 
 //    printf("%s,",base64);
@@ -185,6 +187,7 @@ PHP_FUNCTION(easy_compiler_encrypt) {
 };
 
 PHP_FUNCTION(easy_compiler_decrypt) {
+    int i = 0;
     unsigned char *base64;
     unsigned char *decrypt_string;
     size_t base64_len;
@@ -210,30 +213,33 @@ PHP_FUNCTION(easy_compiler_decrypt) {
     efree(base64);
     //得到原始长度和原始字符串
     base64_len = ZSTR_LEN(base64_decode);
-    decrypt_string = decrypt_str(ZSTR_VAL(base64_decode));
+    int decrypt_len = NULL;
+    decrypt_string = decrypt_str(ZSTR_VAL(base64_decode),base64_len,&decrypt_len);
     zend_string_release(base64_decode);
     efree(base64_decode);
 
     zend_string *eval_string;
     zval z_str;
-    eval_string = zend_string_init(decrypt_string,base64_len,0);
+    eval_string = zend_string_init(decrypt_string,decrypt_len,0);
     ZVAL_STR(&z_str,eval_string);
 
     zend_op_array *new_op_array;
     char *filename = zend_get_executed_filename(TSRMLS_C);
     new_op_array =  compile_string(&z_str, filename TSRMLS_C);
-    zend_try {
-        // exec new op code
-        zend_execute(new_op_array,return_value);
-        //zend_eval_stringl(decrypt_string,strlen(decrypt_string), return_value, (char *)"" TSRMLS_CC);
-    } zend_catch {
+    if(new_op_array){
+        zend_try {
+            // exec new op code
+            zend_execute(new_op_array,return_value);
+            //zend_eval_stringl(decrypt_string,strlen(decrypt_string), return_value, (char *)"" TSRMLS_CC);
+        } zend_catch {
 
-    } zend_end_try();
+        } zend_end_try();
+        destroy_op_array(new_op_array);
+        efree(new_op_array);
+    }
     zval_ptr_dtor(&z_str);
     free(decrypt_string);
     decrypt_string = NULL;
-    destroy_op_array(new_op_array);
-    efree(new_op_array);
     efree(filename);
     filename = NULL;
 };

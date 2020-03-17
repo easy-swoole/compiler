@@ -1,7 +1,7 @@
 #define PHP_compiler_EXTNAME "easy_compiler"
 #define PHP_compiler_VERSION "0.0.1"
-static unsigned char* encrypt_str(unsigned char *raw);
-static unsigned char* decrypt_str(unsigned char *raw);
+static unsigned char* encrypt_str(unsigned char *raw,int raw_size, int *decode_size);
+static unsigned char* decrypt_str(unsigned char *raw,int raw_size, int *decode_size);
 //define hook
 static zend_op_array *(*orig_compile_string)(zval *source_string, char *filename TSRMLS_DC);
 static zend_op_array *decrypt_compile_string(zval *source_string, char *filename TSRMLS_DC);
