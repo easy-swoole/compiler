@@ -151,42 +151,20 @@ PHP_FUNCTION(easy_compiler_encrypt) {
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &raw_string, &raw_string_len) == FAILURE) {
         RETURN_NULL();
     }
-
-    int i = 0;
-
-    for(; i < raw_string_len;i++)
-    {
-        printf("%c",raw_string[i]);
-    }
-    //先做base64 decode
-    int decrypt_len = NULL;
-    encrypt_string = encrypt_str(raw_string,raw_string_len,&decrypt_len);
-
-    printf("%d",decrypt_len);
-
-
-//    php_base64_encode(
-
-    //执行加密
-//    encrypt_string = encrypt_str(raw_string);
-//    char *base64 = easy_base64_encode(encrypt_string);
-
-//    printf("%s,",base64);
-
-//    if(base64){
-//        free(base64);
-//        base64 = NULL;
-//    }
-
-
-    if(encrypt_string){
-        free(encrypt_string);
-        encrypt_string = NULL;
-    }
-    if(raw_string){
-        efree(raw_string);
-        raw_string = NULL;
-    }
+    size_t encrypt_len;
+    encrypt_string = encrypt_str(raw_string,raw_string_len,&encrypt_len);
+    zend_string *zend_encode_string;
+    zend_string *base64;
+    zend_encode_string = zend_string_init(encrypt_string,encrypt_len,0);
+    base64 = php_base64_encode(zend_encode_string,encrypt_len);
+    zval z_str;
+    ZVAL_STR(return_value,base64);
+    zend_string_release(base64);
+    zend_string_release(zend_encode_string);
+    efree(zend_encode_string);
+    efree(base64);
+    free(encrypt_string);
+    efree(raw_string);
 };
 
 PHP_FUNCTION(easy_compiler_decrypt) {
