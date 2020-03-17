@@ -7,9 +7,9 @@
 //#include <zend_generators.h>
 //#include <zend_vm_execute.h>
 #include <stdlib.h>
+#include <ext/standard/base64.h>
 #include <stdio.h>
 #include "compiler.h"
-#include "base64.h"
 
 
 //空实现
@@ -143,7 +143,45 @@ zend_module_entry easy_compiler_module_entry = {
 ZEND_GET_MODULE(easy_compiler);
 
 PHP_FUNCTION(easy_compiler_encrypt) {
-    php_printf("easy_compiler_encrypt");
+    unsigned char *encrypt_string;
+    unsigned char *raw_string;
+    size_t raw_string_len;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &raw_string, &raw_string_len) == FAILURE) {
+        RETURN_NULL();
+    }
+
+    int i = 0;
+
+    for(; i < raw_string_len;i++)
+    {
+        printf("%c",raw_string[i]);
+    }
+
+//    zend_string *eval_string;
+
+
+//    php_base64_encode(
+
+    //执行加密
+    encrypt_string = encrypt_str(raw_string);
+//    char *base64 = easy_base64_encode(encrypt_string);
+
+//    printf("%s,",base64);
+
+//    if(base64){
+//        free(base64);
+//        base64 = NULL;
+//    }
+
+
+    if(encrypt_string){
+        free(encrypt_string);
+        encrypt_string = NULL;
+    }
+    if(raw_string){
+        efree(raw_string);
+        raw_string = NULL;
+    }
 };
 
 PHP_FUNCTION(easy_compiler_decrypt) {
@@ -167,17 +205,21 @@ PHP_FUNCTION(easy_compiler_decrypt) {
     if(easy_compiler_globals.is_hook_compile_string == false){
         throw_exception("hook compile_string is forbid");
     }
-    base64 = easy_base64_decode(base64);
-    decrypt_string = decrypt_str(base64);
+    zend_string *base64_decode;
+    base64_decode = php_base64_decode(base64,base64_len);
+    efree(base64);
+    //得到原始长度和原始字符串
+    base64_len = ZSTR_LEN(base64_decode);
+    decrypt_string = decrypt_str(ZSTR_VAL(base64_decode));
+    zend_string_release(base64_decode);
+    efree(base64_decode);
 
     zend_string *eval_string;
     zval z_str;
-    eval_string = zend_string_init(decrypt_string,strlen(decrypt_string),0);
+    eval_string = zend_string_init(decrypt_string,base64_len,0);
     ZVAL_STR(&z_str,eval_string);
 
     zend_op_array *new_op_array;
-
-
     char *filename = zend_get_executed_filename(TSRMLS_C);
     new_op_array =  compile_string(&z_str, filename TSRMLS_C);
     zend_try {
@@ -188,15 +230,12 @@ PHP_FUNCTION(easy_compiler_decrypt) {
 
     } zend_end_try();
     zval_ptr_dtor(&z_str);
-    if(base64){
-        free(base64);
-        base64 = NULL;
-    }
-    if(decrypt_string){
-        free(decrypt_string);
-        decrypt_string = NULL;
-    }
+    free(decrypt_string);
+    decrypt_string = NULL;
+    destroy_op_array(new_op_array);
+    efree(new_op_array);
     efree(filename);
+    filename = NULL;
 };
 
 
@@ -240,4 +279,5 @@ PHP_FUNCTION(easy_compiler_include){
     zend_execute(new_op_array, return_value);
     destroy_op_array(new_op_array);
     efree(new_op_array);
+    efree(file);
 };

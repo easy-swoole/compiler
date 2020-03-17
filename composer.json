@@ -1,0 +1,23 @@
+{
+    "name": "easyswoole/compiler",
+    "type": "library",
+    "description": "easyswoole component",
+    "keywords" : ["swoole", "framework", "async","easyswoole"],
+    "homepage" : "https://www.easyswoole.com/",
+    "license" : "Apache-2.0",
+    "authors": [
+        {
+            "name": "YF",
+            "email": "291323003@qq.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.1.0",
+        "easyswoole/spl": "^1.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "EasySwoole\\Compiler\\": "php/"
+        }
+    }
+}
