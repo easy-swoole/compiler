@@ -151,26 +151,29 @@ PHP_FUNCTION(easy_compiler_encrypt) {
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &raw_string, &raw_string_len) == FAILURE) {
         RETURN_NULL();
     }
+    //先加密，得到加密后长度
     size_t encrypt_len;
     encrypt_string = encrypt_str(raw_string,raw_string_len,&encrypt_len);
+    //根据加密后长度做base64
     zend_string *zend_encode_string;
     zend_string *base64;
     zend_encode_string = zend_string_init(encrypt_string,encrypt_len,0);
-    base64 = php_base64_encode(zend_encode_string,encrypt_len);
-    zval z_str;
-    ZVAL_STR(return_value,base64);
+    base64 = php_base64_encode((const unsigned char*)ZSTR_VAL(zend_encode_string),ZSTR_LEN(zend_encode_string));
+    char *res = ZSTR_VAL(base64);
     zend_string_release(base64);
     zend_string_release(zend_encode_string);
     efree(zend_encode_string);
     efree(base64);
-    free(encrypt_string);
     efree(raw_string);
+    free(encrypt_string);
+    RETURN_STRING(res);
 };
 
 PHP_FUNCTION(easy_compiler_decrypt) {
     int i = 0;
     unsigned char *base64;
     unsigned char *decrypt_string;
+    //base64参数长度
     size_t base64_len;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &base64, &base64_len) == FAILURE) {
         RETURN_NULL();
@@ -189,13 +192,26 @@ PHP_FUNCTION(easy_compiler_decrypt) {
     if(easy_compiler_globals.is_hook_compile_string == false){
         throw_exception("hook compile_string is forbid");
     }
+    //base64 decode
     zend_string *base64_decode;
     base64_decode = php_base64_decode(base64,base64_len);
     efree(base64);
     //得到原始长度和原始字符串
     base64_len = ZSTR_LEN(base64_decode);
     int decrypt_len = NULL;
-    decrypt_string = decrypt_str(ZSTR_VAL(base64_decode),base64_len,&decrypt_len);
+    decrypt_string = decrypt_str((const char*)ZSTR_VAL(base64_decode),base64_len,&decrypt_len);
+
+    for(;i < decrypt_len;i++)
+    {
+        printf("%c",decrypt_string[i]);
+    }
+
+    //需要反向序列化
+
+
+    RETURN_NULL();
+
+
     zend_string_release(base64_decode);
     efree(base64_decode);
 
