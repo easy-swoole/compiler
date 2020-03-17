@@ -15,6 +15,6 @@ class Compiler
         }
         $data = substr(file_get_contents($file),5);
         $res = easy_compiler_encrypt($data);
-        return "<?php easy_compiler_decrypt('{$res}');";
+        return "<?php return easy_compiler_decrypt('{$res}');";
     }
 }
