@@ -126,6 +126,7 @@ zend_function_entry easy_compiler_functions[] = {
         PHP_FE(easy_compiler_encrypt, NULL)
         PHP_FE(easy_compiler_decrypt, NULL)
         PHP_FE(easy_compiler_include, NULL)
+        PHP_FE(easy_compiler_eval, NULL)
         PHP_FE_END
 };
 
@@ -162,6 +163,9 @@ PHP_FUNCTION(easy_compiler_encrypt) {
     char *res = ZSTR_VAL(base64);
     zend_string_release(base64);
     zend_string_release(zend_encode_string);
+    base64 = NULL;
+    zend_encode_string = NULL;
+    raw_string = NULL;
     efree(zend_encode_string);
     efree(base64);
     efree(raw_string);
@@ -170,7 +174,6 @@ PHP_FUNCTION(easy_compiler_encrypt) {
 };
 
 PHP_FUNCTION(easy_compiler_decrypt) {
-    int i = 0;
     unsigned char *base64;
     unsigned char *decrypt_string;
     //base64参数长度
@@ -200,21 +203,9 @@ PHP_FUNCTION(easy_compiler_decrypt) {
     base64_len = ZSTR_LEN(base64_decode);
     int decrypt_len = NULL;
     decrypt_string = decrypt_str((const char*)ZSTR_VAL(base64_decode),base64_len,&decrypt_len);
-
-    for(;i < decrypt_len;i++)
-    {
-        printf("%c",decrypt_string[i]);
-    }
-
-    //需要反向序列化
-
-
-    RETURN_NULL();
-
-
     zend_string_release(base64_decode);
+    base64_decode = NULL;
     efree(base64_decode);
-
     zend_string *eval_string;
     zval z_str;
     eval_string = zend_string_init(decrypt_string,decrypt_len,0);
@@ -282,4 +273,49 @@ PHP_FUNCTION(easy_compiler_include){
     destroy_op_array(new_op_array);
     efree(new_op_array);
     efree(file);
+};
+
+PHP_FUNCTION(easy_compiler_eval){
+    unsigned char *raw_string;
+    //base64参数长度
+    size_t raw_string_len;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &raw_string, &raw_string_len) == FAILURE) {
+        RETURN_NULL();
+    }
+    //提前执行一次eval空字符串,用来判定compile_file和compile_string是否被hook替换，禁止从内存拿数据
+    zend_try {
+        zend_eval_string("", NULL, (char *)"" TSRMLS_CC);
+    } zend_catch {
+
+    } zend_end_try();
+
+    if(easy_compiler_globals.is_hook_compile_file == false){
+         throw_exception("hook compile_file is forbid");
+    }
+
+    if(easy_compiler_globals.is_hook_compile_string == false){
+        throw_exception("hook compile_string is forbid");
+    }
+
+    zend_string *eval_string;
+    zval z_str;
+    eval_string = zend_string_init(raw_string,raw_string_len,0);
+    ZVAL_STR(&z_str,eval_string);
+    zend_op_array *new_op_array;
+    char *filename = zend_get_executed_filename(TSRMLS_C);
+    new_op_array =  compile_string(&z_str, filename TSRMLS_C);
+    if(new_op_array){
+        zend_try {
+            // exec new op code
+            zend_execute(new_op_array,return_value);
+            //zend_eval_stringl(decrypt_string,strlen(decrypt_string), return_value, (char *)"" TSRMLS_CC);
+        } zend_catch {
+
+        } zend_end_try();
+        destroy_op_array(new_op_array);
+        efree(new_op_array);
+    }
+    zval_ptr_dtor(&z_str);
+    efree(filename);
+    filename = NULL;
 };

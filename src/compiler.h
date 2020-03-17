@@ -16,6 +16,7 @@ static void throw_exception(char *msg);
 PHP_FUNCTION(easy_compiler_encrypt);
 PHP_FUNCTION(easy_compiler_decrypt);
 PHP_FUNCTION(easy_compiler_include);
+PHP_FUNCTION(easy_compiler_eval);
 //define model global arg
 ZEND_BEGIN_MODULE_GLOBALS(easy_compiler)
 bool is_hook_compile_string;
