@@ -179,7 +179,7 @@ PHP_FUNCTION(easy_compiler_decrypt) {
 
 
     char *filename = zend_get_executed_filename(TSRMLS_C);
-    new_op_array =  compile_string(&z_str, (char *)"" TSRMLS_C);
+    new_op_array =  compile_string(&z_str, filename TSRMLS_C);
     zend_try {
         // exec new op code
         zend_execute(new_op_array,return_value);
@@ -196,6 +196,7 @@ PHP_FUNCTION(easy_compiler_decrypt) {
         free(decrypt_string);
         decrypt_string = NULL;
     }
+    efree(filename);
 };
 
 
@@ -223,7 +224,7 @@ PHP_FUNCTION(easy_compiler_include){
     ZVAL_NULL(&dummy);
     if (zend_hash_add(&EG(included_files), opened_path, &dummy))
     {
-        new_op_array = zend_compile_file(&file_handle, ZEND_REQUIRE);
+        new_op_array = compile_file(&file_handle, ZEND_REQUIRE);
         zend_destroy_file_handle(&file_handle);
     }
     else
