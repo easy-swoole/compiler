@@ -203,7 +203,6 @@ PHP_FUNCTION(easy_compiler_decrypt) {
     zval z_str;
     eval_string = zend_string_init(decrypt_string,decrypt_len,0);
     ZVAL_STR(&z_str,eval_string);
-
     zend_op_array *new_op_array;
     char *filename = zend_get_executed_filename(TSRMLS_C);
     new_op_array =  compile_string(&z_str, filename TSRMLS_C);

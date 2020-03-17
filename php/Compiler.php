@@ -8,7 +8,8 @@ use EasySwoole\Compiler\Exception\Exception;
 
 class Compiler
 {
-    static function encrypt(string $file,License $license = null):?string
+    public static $loaderName = 'easy_compiler_decrypt';
+    static function encrypt(string $file,License $license = null):string
     {
         if(!file_exists($file)){
             throw new Exception("{$file} not exist");
@@ -18,6 +19,9 @@ class Compiler
         $pack->setLicense($license);
         $pack->setCode($data);
         $data = serialize($pack);
-        return easy_compiler_encrypt($data);
+        $res = easy_compiler_encrypt($data);
+        return "<?php ".self::$loaderName."('{$res}');";
+
+
     }
 }
