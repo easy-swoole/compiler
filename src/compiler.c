@@ -171,27 +171,23 @@ PHP_FUNCTION(easy_compiler_decrypt) {
     decrypt_string = decrypt_str(base64);
 
     zend_string *eval_string;
+    zval z_str;
     eval_string = zend_string_init(decrypt_string,strlen(decrypt_string),0);
+    ZVAL_STR(&z_str,eval_string);
 
     zend_op_array *new_op_array;
+
+
     char *filename = zend_get_executed_filename(TSRMLS_C);
-    new_op_array =  orig_compile_string(eval_string, (char *)"" TSRMLS_DC);
-    zval *retval;
+    new_op_array =  compile_string(&z_str, (char *)"" TSRMLS_C);
     zend_try {
         // exec new op code
-//        zend_execute(new_op_array,retval);
-//        zend_eval_stringl(decrypt_string,strlen(decrypt_string), return_value, (char *)"" TSRMLS_CC);
+        zend_execute(new_op_array,return_value);
+        //zend_eval_stringl(decrypt_string,strlen(decrypt_string), return_value, (char *)"" TSRMLS_CC);
     } zend_catch {
 
     } zend_end_try();
-
-
-    char *str;
-    int len ;
-    len = ZSTR_LEN(eval_string);
-    str = estrndup(ZSTR_VAL(eval_string), len);
-    printf("%s",str);
-
+    zval_ptr_dtor(&z_str);
     if(base64){
         free(base64);
         base64 = NULL;
