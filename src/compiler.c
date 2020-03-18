@@ -65,7 +65,7 @@ static zend_op_array *decrypt_compile_string(zval *source_string, char *filename
 //    len  = Z_STRLEN_P(source_string);
 //    str = estrndup(Z_STRVAL_P(source_string), len);
 //    printf("\n==========DUMP===========\n");
-//    printf("%s", filename);
+//    printf("%s", str);
 //    printf("\n==========DUMP===========\n");
 //    return orig_compile_string(source_string, filename);
 }
