@@ -137,7 +137,7 @@ PHP_FUNCTION(easy_compiler_encrypt) {
 
     struct AES_ctx ctx;
     AES_init_ctx_iv(&ctx, AES_KEY, AES_IV_KEY);
-    AES_CBC_encrypt_buffer(&ctx,pkcs7,NULL);
+    AES_CBC_encrypt_buffer(&ctx,pkcs7,after_padding_len);
     zend_string *zend_encode_string = zend_string_init(pkcs7,after_padding_len,0);
     zend_string *base64;
     base64 = php_base64_encode((const unsigned char*)ZSTR_VAL(zend_encode_string),ZSTR_LEN(zend_encode_string));
@@ -173,7 +173,7 @@ PHP_FUNCTION(easy_compiler_decrypt) {
     memcpy(pkcs7,(const char*)ZSTR_VAL(encrypt_z_str),encrypt_len);
     struct AES_ctx ctx;
     AES_init_ctx_iv(&ctx, AES_KEY, AES_IV_KEY);
-    AES_CBC_decrypt_buffer(&ctx,pkcs7,NULL);
+    AES_CBC_decrypt_buffer(&ctx,pkcs7,encrypt_len);
     encrypt_len = PKCS7Cutting(pkcs7,encrypt_len);
     zend_string *eval_string = zend_string_init(pkcs7,encrypt_len,0);
     zval *z_str;
