@@ -15,20 +15,31 @@
 
 ZEND_DECLARE_MODULE_GLOBALS(easy_compiler);
 
-PHP_MINIT_FUNCTION(easy_compiler_load)
+PHP_MINIT_FUNCTION(easy_compiler)
 {
     easy_compiler_orig_compile_file = zend_compile_file;
     zend_compile_file = easy_compiler_compile_file;
     easy_compiler_orig_compile_string = zend_compile_string;
     zend_compile_string = easy_compiler_compile_string;
+    easy_compiler_global_init();
     return SUCCESS;
 }
 
-PHP_MSHUTDOWN_FUNCTION(easy_compiler_shut)
+PHP_MSHUTDOWN_FUNCTION(easy_compiler)
 {
     zend_compile_string = easy_compiler_orig_compile_string;
     zend_compile_file = easy_compiler_orig_compile_file;
     return SUCCESS;
+}
+
+PHP_MINFO_FUNCTION(easy_compiler)
+{
+     php_info_print_table_start();
+     php_info_print_table_header(2, "Version", PHP_EASY_COMPILER_VERSION);
+     php_info_print_table_header(2, "Author", "如果的如果");
+     php_info_print_table_header(2, "Email", "admin@fosuss.com");
+     php_info_print_table_end();
+     DISPLAY_INI_ENTRIES();
 }
 
 zend_function_entry easy_compiler_functions[] = {
@@ -42,11 +53,11 @@ zend_module_entry easy_compiler_module_entry = {
         STANDARD_MODULE_HEADER,
         PHP_EASY_COMPILER_EXTNAME,
         easy_compiler_functions,
-        PHP_MINIT(easy_compiler_load),
+        PHP_MINIT(easy_compiler),
+        PHP_MSHUTDOWN(easy_compiler),
         NULL,
         NULL,
-        NULL,
-        NULL,
+        PHP_MINFO(easy_compiler),
         PHP_EASY_COMPILER_VERSION,
         STANDARD_MODULE_PROPERTIES,
 };
@@ -54,7 +65,6 @@ zend_module_entry easy_compiler_module_entry = {
 ZEND_GET_MODULE(easy_compiler);
 
 PHP_FUNCTION(easy_compiler_encrypt) {
-    easy_compiler_global_init();
     unsigned char *raw_string;
     size_t *raw_string_len;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &raw_string, &raw_string_len) == FAILURE) {
@@ -83,7 +93,6 @@ PHP_FUNCTION(easy_compiler_decrypt) {
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &base64, &base64_len) == FAILURE) {
         RETURN_NULL();
     }
-    easy_compiler_global_init();
     zend_string *encrypt_z_str;
     encrypt_z_str = php_base64_decode(base64,base64_len);
     size_t encrypt_len = NULL;
@@ -127,7 +136,7 @@ PHP_FUNCTION(easy_compiler_eval){
     easy_compiler_eval(raw_string,raw_string_len,return_value);
 };
 
-static void easy_compiler_eval(unsigned char *raw_string,size_t raw_string_len,zval *return_value)
+static void easy_compiler_eval(unsigned char *raw_string,size_t raw_string_len,zval *retval)
 {
     zend_string *eval_string;
     zval z_str;
@@ -135,10 +144,10 @@ static void easy_compiler_eval(unsigned char *raw_string,size_t raw_string_len,z
     ZVAL_STR(&z_str,eval_string);
     zend_op_array *new_op_array;
     char *filename = zend_get_executed_filename(TSRMLS_C);
-    new_op_array = easy_compiler_compile_string(&z_str, filename TSRMLS_C);
+    new_op_array = easy_compiler_compile_string(&z_str, filename TSRMLS_CC);
     if(new_op_array){
         zend_try {
-            zend_execute(new_op_array,return_value);
+            zend_execute(new_op_array,retval);
         } zend_catch {
 
         } zend_end_try();
@@ -146,19 +155,13 @@ static void easy_compiler_eval(unsigned char *raw_string,size_t raw_string_len,z
         efree(new_op_array);
     }
     zval_ptr_dtor(&z_str);
-    efree(filename);
-    filename = NULL;
 }
 
 static void easy_compiler_global_init()
 {
-     if(!easy_compiler_globals.is_init_class){
-        unsigned char *php_code;
-        php_code = "class MyTest{}";
-        zval *ret;
-        easy_compiler_eval(php_code,strlen(php_code),&ret);
-        easy_compiler_globals.is_init_class = 1;
-     }
+    unsigned char *php_code;
+    php_code = "";
+    easy_compiler_eval(php_code,strlen(php_code),NULL);
 }
 
 //opcode处理
