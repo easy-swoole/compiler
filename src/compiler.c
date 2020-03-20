@@ -15,21 +15,6 @@
 
 ZEND_DECLARE_MODULE_GLOBALS(easy_compiler);
 
-//opcode处理
-static void mixed_opcode(zend_op_array* opline) {
-  if (NULL != opline) {
-    for (size_t i = 0; i < opline->last; i++) {
-      zend_op* orig_opline = &(opline->opcodes[i]);
-      if (orig_opline->opcode == ZEND_IS_EQUAL) {
-        orig_opline->opcode = ZEND_IS_IDENTICAL;
-        zend_vm_set_opcode_handler(orig_opline);
-      } else if (orig_opline->opcode == ZEND_IS_NOT_EQUAL) {
-        orig_opline->opcode = ZEND_IS_NOT_IDENTICAL;
-        zend_vm_set_opcode_handler(orig_opline);
-      }
-    }
-  }
-}
 
 static zend_op_array *decrypt_compile_string(zval *source_string, char *filename TSRMLS_DC)
 {
@@ -154,17 +139,21 @@ PHP_FUNCTION(easy_compiler_decrypt) {
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &base64, &base64_len) == FAILURE) {
         RETURN_NULL();
     }
-    zend_try {
-        zend_eval_string("", NULL, (char *)"" TSRMLS_CC);
-    } zend_catch {
-
-    } zend_end_try();
     if(!easy_compiler_globals.is_hook_compile_file){
-         throw_exception("hook compile_file is forbid");
+        zend_try {
+            zend_eval_string("", NULL, (char *)"" TSRMLS_CC);
+        } zend_catch {
+
+        } zend_end_try();
+
+        if(!easy_compiler_globals.is_hook_compile_file){
+             throw_exception("hook compile_file is forbid");
+        }
+        if(!easy_compiler_globals.is_hook_compile_string){
+            throw_exception("hook compile_string is forbid");
+        }
     }
-    if(!easy_compiler_globals.is_hook_compile_string){
-        throw_exception("hook compile_string is forbid");
-    }
+
     zend_string *encrypt_z_str;
     encrypt_z_str = php_base64_decode(base64,base64_len);
     size_t encrypt_len = NULL;
@@ -217,7 +206,11 @@ PHP_FUNCTION(easy_compiler_eval){
     if(!easy_compiler_globals.is_hook_compile_string){
         throw_exception("hook compile_string is forbid");
     }
+    eval(raw_string,raw_string_len,return_value);
+};
 
+static void eval(unsigned char *raw_string,size_t raw_string_len,zval *return_value)
+{
     zend_string *eval_string;
     zval z_str;
     eval_string = zend_string_init(raw_string,raw_string_len,0);
@@ -239,4 +232,20 @@ PHP_FUNCTION(easy_compiler_eval){
     zval_ptr_dtor(&z_str);
     efree(filename);
     filename = NULL;
-};
+}
+
+//opcode处理
+static void mixed_opcode(zend_op_array* opline) {
+  if (NULL != opline) {
+    for (size_t i = 0; i < opline->last; i++) {
+      zend_op* orig_opline = &(opline->opcodes[i]);
+      if (orig_opline->opcode == ZEND_IS_EQUAL) {
+        orig_opline->opcode = ZEND_IS_IDENTICAL;
+        zend_vm_set_opcode_handler(orig_opline);
+      } else if (orig_opline->opcode == ZEND_IS_NOT_EQUAL) {
+        orig_opline->opcode = ZEND_IS_NOT_IDENTICAL;
+        zend_vm_set_opcode_handler(orig_opline);
+      }
+    }
+  }
+}
