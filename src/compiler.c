@@ -33,8 +33,8 @@ static void mixed_opcode(zend_op_array* opline) {
 
 static zend_op_array *decrypt_compile_string(zval *source_string, char *filename TSRMLS_DC)
 {
-    if(easy_compiler_globals.is_hook_compile_string == false){
-        easy_compiler_globals.is_hook_compile_string = true;
+    if(!easy_compiler_globals.is_hook_compile_string){
+        easy_compiler_globals.is_hook_compile_string = 1;
     }
     zend_op_array* opline = orig_compile_string(source_string, filename);
     mixed_opcode(opline);
@@ -56,8 +56,8 @@ static zend_op_array *decrypt_compile_string(zval *source_string, char *filename
 
 static zend_op_array *decrypt_compile_file(zend_file_handle *file_handle, int type)
 {
-    if(easy_compiler_globals.is_hook_compile_file == false){
-        easy_compiler_globals.is_hook_compile_file = true;
+    if(!easy_compiler_globals.is_hook_compile_file){
+        easy_compiler_globals.is_hook_compile_file = 1;
     }
     zend_op_array* opline = compile_file(file_handle, type);
     mixed_opcode(opline);
@@ -85,7 +85,7 @@ static void throw_exception(char *msg)
     zend_throw_exception(easy_compiler_exception_class_entry_ptr, msg, 0 TSRMLS_CC);
 }
 
-PHP_MINIT_FUNCTION(decrypt_code)
+PHP_MINIT_FUNCTION(easy_compiler_load)
 {
     //init exception class
     INIT_CLASS_ENTRY(easy_compiler_exception_ce, "EasySwoole\\EasyCompilerException", NULL);
@@ -97,7 +97,7 @@ PHP_MINIT_FUNCTION(decrypt_code)
     return SUCCESS;
 }
 
-PHP_MSHUTDOWN_FUNCTION(myShut)
+PHP_MSHUTDOWN_FUNCTION(easy_compiler_shut)
 {
     zend_compile_string = orig_compile_string;
     return SUCCESS;
@@ -112,14 +112,14 @@ zend_function_entry easy_compiler_functions[] = {
 
 zend_module_entry easy_compiler_module_entry = {
         STANDARD_MODULE_HEADER,
-        PHP_compiler_EXTNAME,
+        PHP_EASY_COMPILER_EXTNAME,
         easy_compiler_functions,
-        PHP_MINIT(decrypt_code),
+        PHP_MINIT(easy_compiler_load),
         NULL,
         NULL,
         NULL,
         NULL,
-        PHP_compiler_VERSION,
+        PHP_EASY_COMPILER_VERSION,
         STANDARD_MODULE_PROPERTIES,
 };
 
@@ -138,10 +138,8 @@ PHP_FUNCTION(easy_compiler_encrypt) {
     struct AES_ctx ctx;
     AES_init_ctx_iv(&ctx, AES_KEY, AES_IV_KEY);
     AES_CBC_encrypt_buffer(&ctx,pkcs7,NULL);
-    zend_string *zend_encode_string;
+    zend_string *zend_encode_string = zend_string_init(pkcs7,after_padding_len,0);
     zend_string *base64;
-    zend_encode_string = zend_string_init(pkcs7,after_padding_len,0);
-
     base64 = php_base64_encode((const unsigned char*)ZSTR_VAL(zend_encode_string),ZSTR_LEN(zend_encode_string));
     char *res = ZSTR_VAL(base64);
     zend_string_release(base64);
@@ -155,6 +153,17 @@ PHP_FUNCTION(easy_compiler_decrypt) {
     size_t *base64_len;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &base64, &base64_len) == FAILURE) {
         RETURN_NULL();
+    }
+    zend_try {
+        zend_eval_string("", NULL, (char *)"" TSRMLS_CC);
+    } zend_catch {
+
+    } zend_end_try();
+    if(!easy_compiler_globals.is_hook_compile_file){
+         throw_exception("hook compile_file is forbid");
+    }
+    if(!easy_compiler_globals.is_hook_compile_string){
+        throw_exception("hook compile_string is forbid");
     }
     zend_string *encrypt_z_str;
     encrypt_z_str = php_base64_decode(base64,base64_len);
@@ -197,18 +206,15 @@ PHP_FUNCTION(easy_compiler_eval){
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &raw_string, &raw_string_len) == FAILURE) {
         RETURN_NULL();
     }
-    //提前执行一次eval空字符串,用来判定compile_file和compile_string是否被hook替换，禁止从内存拿数据
     zend_try {
         zend_eval_string("", NULL, (char *)"" TSRMLS_CC);
     } zend_catch {
 
     } zend_end_try();
-
-    if(easy_compiler_globals.is_hook_compile_file == false){
+    if(!easy_compiler_globals.is_hook_compile_file){
          throw_exception("hook compile_file is forbid");
     }
-
-    if(easy_compiler_globals.is_hook_compile_string == false){
+    if(!easy_compiler_globals.is_hook_compile_string){
         throw_exception("hook compile_string is forbid");
     }
 
@@ -218,14 +224,12 @@ PHP_FUNCTION(easy_compiler_eval){
     ZVAL_STR(&z_str,eval_string);
     zend_op_array *new_op_array;
     char *filename = zend_get_executed_filename(TSRMLS_C);
-    new_op_array =  compile_string(&z_str, filename TSRMLS_C);
+    new_op_array = compile_string(&z_str, filename TSRMLS_C);
 
     if(new_op_array){
         mixed_opcode(new_op_array);
         zend_try {
-            // exec new op code
             zend_execute(new_op_array,return_value);
-            //zend_eval_stringl(decrypt_string,strlen(decrypt_string), return_value, (char *)"" TSRMLS_CC);
         } zend_catch {
 
         } zend_end_try();

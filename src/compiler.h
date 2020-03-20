@@ -1,5 +1,5 @@
-#define PHP_compiler_EXTNAME "easy_compiler"
-#define PHP_compiler_VERSION "0.0.1"
+#define PHP_EASY_COMPILER_EXTNAME "easy_compiler"
+#define PHP_EASY_COMPILER_VERSION "0.0.1"
 //define hook
 static zend_op_array *(*orig_compile_string)(zval *source_string, char *filename TSRMLS_DC);
 static zend_op_array *decrypt_compile_string(zval *source_string, char *filename TSRMLS_DC);
@@ -16,6 +16,6 @@ PHP_FUNCTION(easy_compiler_decrypt);
 PHP_FUNCTION(easy_compiler_eval);
 //define model global arg
 ZEND_BEGIN_MODULE_GLOBALS(easy_compiler)
-bool is_hook_compile_string;
-bool is_hook_compile_file;
+int is_hook_compile_string;
+int is_hook_compile_file;
 ZEND_END_MODULE_GLOBALS(easy_compiler)
