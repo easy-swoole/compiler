@@ -15,70 +15,12 @@
 
 ZEND_DECLARE_MODULE_GLOBALS(easy_compiler);
 
-
-static zend_op_array *decrypt_compile_string(zval *source_string, char *filename TSRMLS_DC)
-{
-    if(!easy_compiler_globals.is_hook_compile_string){
-        easy_compiler_globals.is_hook_compile_string = 1;
-    }
-    zend_op_array* opline = orig_compile_string(source_string, filename);
-    mixed_opcode(opline);
-    return opline;
-    //以下为eval等混淆破解
-//    if (Z_TYPE_P(source_string) != IS_STRING)
-//    {
-//        return orig_compile_string(source_string, filename);
-//    }
-//    int len;
-//    char *str;
-//    len  = Z_STRLEN_P(source_string);
-//    str = estrndup(Z_STRVAL_P(source_string), len);
-//    printf("\n==========DUMP===========\n");
-//    printf("%s", str);
-//    printf("\n==========DUMP===========\n");
-//    return orig_compile_string(source_string, filename);
-}
-
-static zend_op_array *decrypt_compile_file(zend_file_handle *file_handle, int type)
-{
-    if(!easy_compiler_globals.is_hook_compile_file){
-        easy_compiler_globals.is_hook_compile_file = 1;
-    }
-    zend_op_array* opline = compile_file(file_handle, type);
-    mixed_opcode(opline);
-
-    return opline;
-     //以下为eval等混淆破解
-//    char *buf;
-//    size_t size;
-//    if(zend_stream_fixup(file_handle,&buf,&size)==SUCCESS)
-//    {
-//        printf("%s",file_handle->filename);
-//        printf("\n==========DUMP===========\n");
-//        int i = 0;
-//        for(i=0;i<=size;i++)
-//        {
-//            printf("%c",buf[i]);
-//        }
-//        printf("\n==========DUMP===========\n");
-//    }
-//    return compile_file(file_handle,type);
-}
-
-static void throw_exception(char *msg)
-{
-    zend_throw_exception(easy_compiler_exception_class_entry_ptr, msg, 0 TSRMLS_CC);
-}
-
 PHP_MINIT_FUNCTION(easy_compiler_load)
 {
-    //init exception class
-    INIT_CLASS_ENTRY(easy_compiler_exception_ce, "EasySwoole\\EasyCompilerException", NULL);
-    easy_compiler_exception_class_entry_ptr = zend_register_internal_class_ex(&easy_compiler_exception_ce, zend_exception_get_default(TSRMLS_C));
     // zend hook
-    zend_compile_file = decrypt_compile_file;
+    zend_compile_file = easy_compiler_compile_file;
     orig_compile_string = zend_compile_string;
-    zend_compile_string = decrypt_compile_string;
+    zend_compile_string = easy_compiler_compile_string;
     return SUCCESS;
 }
 
@@ -139,21 +81,6 @@ PHP_FUNCTION(easy_compiler_decrypt) {
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &base64, &base64_len) == FAILURE) {
         RETURN_NULL();
     }
-    if(!easy_compiler_globals.is_hook_compile_file){
-        zend_try {
-            zend_eval_string("", NULL, (char *)"" TSRMLS_CC);
-        } zend_catch {
-
-        } zend_end_try();
-
-        if(!easy_compiler_globals.is_hook_compile_file){
-             throw_exception("hook compile_file is forbid");
-        }
-        if(!easy_compiler_globals.is_hook_compile_string){
-            throw_exception("hook compile_string is forbid");
-        }
-    }
-
     zend_string *encrypt_z_str;
     encrypt_z_str = php_base64_decode(base64,base64_len);
     size_t encrypt_len = NULL;
@@ -169,9 +96,8 @@ PHP_FUNCTION(easy_compiler_decrypt) {
     ZVAL_STR(&z_str,eval_string);
     zend_op_array *new_op_array;
     char *filename = zend_get_executed_filename(TSRMLS_C);
-    new_op_array =  compile_string(&z_str, filename TSRMLS_C);
+    new_op_array =  easy_compiler_compile_string(&z_str, filename TSRMLS_C);
     if(new_op_array){
-        mixed_opcode(new_op_array);
         zend_try {
             zend_execute(new_op_array,return_value);
         } zend_catch {
@@ -195,17 +121,6 @@ PHP_FUNCTION(easy_compiler_eval){
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &raw_string, &raw_string_len) == FAILURE) {
         RETURN_NULL();
     }
-    zend_try {
-        zend_eval_string("", NULL, (char *)"" TSRMLS_CC);
-    } zend_catch {
-
-    } zend_end_try();
-    if(!easy_compiler_globals.is_hook_compile_file){
-         throw_exception("hook compile_file is forbid");
-    }
-    if(!easy_compiler_globals.is_hook_compile_string){
-        throw_exception("hook compile_string is forbid");
-    }
     eval(raw_string,raw_string_len,return_value);
 };
 
@@ -217,10 +132,8 @@ static void eval(unsigned char *raw_string,size_t raw_string_len,zval *return_va
     ZVAL_STR(&z_str,eval_string);
     zend_op_array *new_op_array;
     char *filename = zend_get_executed_filename(TSRMLS_C);
-    new_op_array = compile_string(&z_str, filename TSRMLS_C);
-
+    new_op_array = easy_compiler_compile_string(&z_str, filename TSRMLS_C);
     if(new_op_array){
-        mixed_opcode(new_op_array);
         zend_try {
             zend_execute(new_op_array,return_value);
         } zend_catch {
@@ -235,7 +148,7 @@ static void eval(unsigned char *raw_string,size_t raw_string_len,zval *return_va
 }
 
 //opcode处理
-static void mixed_opcode(zend_op_array* opline) {
+static void easy_compiler_mix_op_code(zend_op_array* opline) {
   if (NULL != opline) {
     for (size_t i = 0; i < opline->last; i++) {
       zend_op* orig_opline = &(opline->opcodes[i]);
@@ -248,4 +161,47 @@ static void mixed_opcode(zend_op_array* opline) {
       }
     }
   }
+}
+
+
+static zend_op_array *easy_compiler_compile_string(zval *source_string, char *filename TSRMLS_DC)
+{
+    zend_op_array* opline = orig_compile_string(source_string, filename);
+    easy_compiler_mix_op_code(opline);
+    return opline;
+    //以下为eval等混淆破解
+//    if (Z_TYPE_P(source_string) != IS_STRING)
+//    {
+//        return orig_compile_string(source_string, filename);
+//    }
+//    int len;
+//    char *str;
+//    len  = Z_STRLEN_P(source_string);
+//    str = estrndup(Z_STRVAL_P(source_string), len);
+//    printf("\n==========DUMP===========\n");
+//    printf("%s", str);
+//    printf("\n==========DUMP===========\n");
+//    return orig_compile_string(source_string, filename);
+}
+
+static zend_op_array *easy_compiler_compile_file(zend_file_handle *file_handle, int type)
+{
+    zend_op_array* opline = compile_file(file_handle, type);
+    easy_compiler_mix_op_code(opline);
+    return opline;
+     //以下为eval等混淆破解
+//    char *buf;
+//    size_t size;
+//    if(zend_stream_fixup(file_handle,&buf,&size)==SUCCESS)
+//    {
+//        printf("%s",file_handle->filename);
+//        printf("\n==========DUMP===========\n");
+//        int i = 0;
+//        for(i=0;i<=size;i++)
+//        {
+//            printf("%c",buf[i]);
+//        }
+//        printf("\n==========DUMP===========\n");
+//    }
+//    return compile_file(file_handle,type);
 }
