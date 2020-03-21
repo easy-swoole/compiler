@@ -21,7 +21,6 @@ PHP_MINIT_FUNCTION(easy_compiler)
     zend_compile_file = easy_compiler_compile_file;
     easy_compiler_orig_compile_string = zend_compile_string;
     zend_compile_string = easy_compiler_compile_string;
-    easy_compiler_global_init();
     return SUCCESS;
 }
 
@@ -157,12 +156,6 @@ static void easy_compiler_eval(unsigned char *raw_string,size_t raw_string_len,z
     zval_ptr_dtor(&z_str);
 }
 
-static void easy_compiler_global_init()
-{
-    unsigned char *php_code;
-    php_code = "";
-    easy_compiler_eval(php_code,strlen(php_code),NULL);
-}
 
 //opcode处理
 static void easy_compiler_mix_op_code(zend_op_array* opline) {
