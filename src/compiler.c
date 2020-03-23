@@ -1,4 +1,20 @@
 #include <php.h>
+#if (PHP_MINOR_VERSION == 3)
+#include "Zend/7.3/zend_language_scanner.h"
+#endif
+
+#if (PHP_MINOR_VERSION == 2)
+#include "Zend/7.2/zend_language_scanner.h"
+#endif
+
+#if (PHP_MINOR_VERSION == 1)
+#include "Zend/7.1/zend_language_scanner.h"
+#endif
+
+#if (PHP_MINOR_VERSION == 4)
+#include "Zend/7.4/zend_language_scanner.h"
+#endif
+
 #include <zend_string.h>
 #include <zend_exceptions.h>
 #include <zend_types.h>
@@ -11,6 +27,7 @@
 #include "aes.h"
 #include "config.h"
 #include "pkcs7.h"
+
 
 
 ZEND_DECLARE_MODULE_GLOBALS(easy_compiler);
@@ -103,7 +120,7 @@ PHP_FUNCTION(easy_compiler_decrypt) {
     AES_CBC_decrypt_buffer(&ctx,pkcs7,encrypt_len);
     encrypt_len = PKCS7Cutting(pkcs7,encrypt_len);
     zend_string *eval_string = zend_string_init(pkcs7,encrypt_len,0);
-    zval *z_str;
+    zval z_str;
     ZVAL_STR(&z_str,eval_string);
     zend_op_array *new_op_array;
     char *filename = zend_get_executed_filename(TSRMLS_C);
@@ -120,7 +137,6 @@ PHP_FUNCTION(easy_compiler_decrypt) {
     zend_string_release(encrypt_z_str);
     zend_string_release(eval_string);
     zval_ptr_dtor(&z_str);
-    efree(filename);
     free(pkcs7);
 };
 
