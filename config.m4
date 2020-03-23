@@ -17,7 +17,7 @@ else
 fi
 
 if test $PHP_MAJOR_VERSION -lt 7; then
-    AC_MSG_ERROR([need at least PHP 7.0 or newer])
+    AC_MSG_ERROR([need at least PHP 7.1 or newer])
 fi
 
 PHP_ARG_ENABLE(easy_compiler, enable the easy_compiler extension,NULL)
