@@ -28,7 +28,8 @@ class Compiler
         }else{
             $data = self::handleFile($file);
             if($keepBak){
-                cpoy($file,"{$file}.bak");
+                $bak = file_get_contents($file);
+                file_put_contents("{$file}.bak",$bak);
             }
             file_put_contents($file,$data);
             $count++;
