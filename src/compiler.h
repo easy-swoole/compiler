@@ -1,10 +1,8 @@
 #define PHP_EASY_COMPILER_EXTNAME "easy_compiler"
 #define PHP_EASY_COMPILER_VERSION "1.0.0"
 //define hook
-static zend_op_array *(*easy_compiler_orig_compile_file)(zend_file_handle *file_handle, int type);
 static zend_op_array *easy_compiler_compile_file(zend_file_handle *file_handle, int type);
-static zend_op_array *(*easy_compiler_orig_compile_string)(zval *source_string, char *filename TSRMLS_DC);
-static zend_op_array *easy_compiler_compile_string(zval *source_string, char *filename TSRMLS_DC);
+static zend_op_array *easy_compiler_compile_string(zval *source_string, char *filename);
 //modify opcode
 static void easy_compiler_mix_op_code(zend_op_array* opline);
 //

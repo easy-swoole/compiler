@@ -34,17 +34,11 @@ ZEND_DECLARE_MODULE_GLOBALS(easy_compiler);
 
 PHP_MINIT_FUNCTION(easy_compiler)
 {
-    easy_compiler_orig_compile_file = zend_compile_file;
-    zend_compile_file = easy_compiler_compile_file;
-    easy_compiler_orig_compile_string = zend_compile_string;
-    zend_compile_string = easy_compiler_compile_string;
     return SUCCESS;
 }
 
 PHP_MSHUTDOWN_FUNCTION(easy_compiler)
 {
-    zend_compile_string = easy_compiler_orig_compile_string;
-    zend_compile_file = easy_compiler_orig_compile_file;
     return SUCCESS;
 }
 
@@ -83,7 +77,7 @@ ZEND_GET_MODULE(easy_compiler);
 PHP_FUNCTION(easy_compiler_encrypt) {
     unsigned char *raw_string;
     size_t *raw_string_len;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &raw_string, &raw_string_len) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &raw_string, &raw_string_len) == FAILURE) {
         RETURN_NULL();
     }
     unsigned char *pkcs7 = (unsigned char *)malloc(sizeof(unsigned char*)*PKCS7_MAX_LEN);
@@ -106,7 +100,7 @@ PHP_FUNCTION(easy_compiler_encrypt) {
 PHP_FUNCTION(easy_compiler_decrypt) {
     unsigned char *base64;
     size_t *base64_len;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &base64, &base64_len) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &base64, &base64_len) == FAILURE) {
         RETURN_NULL();
     }
     zend_string *encrypt_z_str;
@@ -123,8 +117,8 @@ PHP_FUNCTION(easy_compiler_decrypt) {
     zval z_str;
     ZVAL_STR(&z_str,eval_string);
     zend_op_array *new_op_array;
-    char *filename = zend_get_executed_filename(TSRMLS_C);
-    new_op_array =  easy_compiler_compile_string(&z_str, filename TSRMLS_C);
+    char *filename = zend_get_executed_filename();
+    new_op_array =  easy_compiler_compile_string(&z_str, filename);
     if(new_op_array){
         zend_try {
             zend_execute(new_op_array,return_value);
@@ -145,7 +139,7 @@ PHP_FUNCTION(easy_compiler_eval){
     unsigned char *raw_string;
     //base64参数长度
     size_t raw_string_len;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &raw_string, &raw_string_len) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &raw_string, &raw_string_len) == FAILURE) {
         RETURN_NULL();
     }
     easy_compiler_eval(raw_string,raw_string_len,return_value);
@@ -158,8 +152,8 @@ static void easy_compiler_eval(unsigned char *raw_string,size_t raw_string_len,z
     eval_string = zend_string_init(raw_string,raw_string_len,0);
     ZVAL_STR(&z_str,eval_string);
     zend_op_array *new_op_array;
-    char *filename = zend_get_executed_filename(TSRMLS_C);
-    new_op_array = easy_compiler_compile_string(&z_str, filename TSRMLS_CC);
+    char *filename = zend_get_executed_filename();
+    new_op_array = easy_compiler_compile_string(&z_str, filename);
     if(new_op_array){
         zend_try {
             zend_execute(new_op_array,retval);
@@ -191,7 +185,7 @@ static void easy_compiler_mix_op_code(zend_op_array* opline) {
 }
 
 
-static zend_op_array *easy_compiler_compile_string(zval *source_string, char *filename TSRMLS_DC)
+static zend_op_array *easy_compiler_compile_string(zval *source_string, char *filename)
 {
     zend_op_array* opline = compile_string(source_string, filename);
     easy_compiler_mix_op_code(opline);

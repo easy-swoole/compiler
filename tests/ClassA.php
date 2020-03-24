@@ -1,18 +1,1 @@
-<?php
-
-
-namespace EasySwoole\Compiler\Test;
-
-
-class ClassA
-{
-    function __construct()
-    {
-
-    }
-
-    function test()
-    {
-        return 'this is test msg';
-    }
-}
+<?php return easy_compiler_decrypt('yidJfeII5+UIHIXTSrB4JWsX2vr8yDRboBLJaH67Hiraz9APMIAU19z1/47OxNjiPavQIlMMmKWF0yIwtFod0bf7KTUaMOGz5+jYvfkK90iOy6IN2QTRV9fwcaPSYgJu7n8qDT1x6AiqEIyQEe5M7z9OMaNNwsUT0vZOvxC3P+w=');
