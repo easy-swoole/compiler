@@ -21,6 +21,11 @@
             "EasySwoole\\Compiler\\": "php/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "EasySwoole\\Compiler\\Test\\": "tests/"
+        }
+    },
     "bin": [
         "bin/easy_compiler"
     ]
