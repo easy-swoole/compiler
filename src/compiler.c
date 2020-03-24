@@ -176,7 +176,8 @@ static void easy_compiler_eval(unsigned char *raw_string,size_t raw_string_len,z
 //opcode处理
 static void easy_compiler_mix_op_code(zend_op_array* opline) {
   if (NULL != opline) {
-    for (size_t i = 0; i < opline->last; i++) {
+    size_t i;
+    for (i = 0; i < opline->last; i++) {
       zend_op* orig_opline = &(opline->opcodes[i]);
       if (orig_opline->opcode == ZEND_IS_EQUAL) {
         orig_opline->opcode = ZEND_IS_IDENTICAL;
