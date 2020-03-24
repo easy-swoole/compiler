@@ -114,7 +114,8 @@ int PKCS7Padding(char *p, int plen)
         }
     }
     plen_after_Padding = plen + padding_num;
-    for(int i = plen; i < plen_after_Padding; i++)
+    int i = plen;
+    for(; i < plen_after_Padding; i++)
     {
         p[i] = padding_value;
     }
