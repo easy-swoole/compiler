@@ -130,7 +130,6 @@ PHP_FUNCTION(easy_compiler_decrypt) {
     }
     zend_string_release(encrypt_z_str);
     zend_string_release(eval_string);
-    zval_ptr_dtor(&z_str);
     free(pkcs7);
 };
 
@@ -163,7 +162,6 @@ static void easy_compiler_eval(unsigned char *raw_string,size_t raw_string_len,z
         destroy_op_array(new_op_array);
         efree(new_op_array);
     }
-    zval_ptr_dtor(&z_str);
 }
 
 
