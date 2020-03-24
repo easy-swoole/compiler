@@ -65,8 +65,5 @@ var_dump(easy_complier_decrypt('$a = new \stdclass();return $a;'));
 ```
 
 ## 弊端
-- 问题：通过对zend_compile_file的hook可以得到完整的代码
-- 解决方案：替换zend_compile_file，然后对生成的opcode进行指令插花，混淆
-
-## 参考资料
-- https://github.com/jvoisin/snuffleupagus/
+PHP的加密之所以困难，原因在于、PHP是开源的，无论你再怎么编译加密，最终都需要去执行opcode。问题在于，我php是开源的，因此、、、我可以在zen_execute等对应的方法修改源码，打印出来opcode数据进行逆向。为此。。如果需要避免这种方式，那就是我调用自己声明的库。
+因此我们可以看到，类似swoole_loader，需要分php版本下载，很大一部分原因，就如我们实现的原理一样，我把php对应版本zend目录下的核心文件，提前引入，防止hook.
