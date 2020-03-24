@@ -4,14 +4,21 @@
 $array = $argv;
 array_shift($array);
 $file = array_shift($array);
-if(empty($file) || !file_exists($file)){
+if(empty($file)){
     echo "{$file} not exist\n";
 }
+
+if(in_array('no-bak',$array)){
+    $bak = false;
+}else{
+    $bak = true;
+}
+
+
 require_once realpath(getcwd()).'/vendor/autoload.php';
 
-$rawData = file_get_contents($file);
 
-$data = EasySwoole\Compiler\Compiler::encrypt($file);
+$i = EasySwoole\Compiler\Compiler::encrypt($file,$bak);
 
-file_put_contents("{$file}.bak",$rawData);
-file_put_contents("{$file}",$data);
+echo "encrypt file num :".$i;
+
