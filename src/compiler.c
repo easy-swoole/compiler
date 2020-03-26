@@ -1,20 +1,4 @@
 #include <php.h>
-#if (PHP_MINOR_VERSION == 3)
-#include "Zend/7.3/zend_language_scanner.h"
-#endif
-
-#if (PHP_MINOR_VERSION == 2)
-#include "Zend/7.2/zend_language_scanner.h"
-#endif
-
-#if (PHP_MINOR_VERSION == 1)
-#include "Zend/7.1/zend_language_scanner.h"
-#endif
-
-#if (PHP_MINOR_VERSION == 4)
-#include "Zend/7.4/zend_language_scanner.h"
-#endif
-
 #include <zend_string.h>
 #include <zend_exceptions.h>
 #include <zend_types.h>

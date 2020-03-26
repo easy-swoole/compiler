@@ -22,5 +22,5 @@ fi
 
 PHP_ARG_ENABLE(easy_compiler, enable the easy_compiler extension,NULL)
 
-
-PHP_NEW_EXTENSION(easy_compiler, src/compiler.c src/pkcs7.c src/aes.c src/Zend/$PHP_MAJOR_VERSION.$PHP_MINOR_VERSION/zend_language_scanner.c, $ext_shared)
+//src/Zend/$PHP_MAJOR_VERSION.$PHP_MINOR_VERSION/zend_language_scanner.c
+PHP_NEW_EXTENSION(easy_compiler, src/compiler.c src/pkcs7.c src/aes.c , $ext_shared)

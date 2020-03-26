@@ -27,6 +27,6 @@
         }
     },
     "bin": [
-        "bin/easy_compiler"
+        "bin/easy-compiler"
     ]
 }
